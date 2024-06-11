@@ -12,7 +12,7 @@
         android:id="@+id/toolbar"
         android:layout_width="0dp"
         android:layout_height="?attr/actionBarSize"
-        android:background="#86DAC6"
+        android:background="#FFFFFF"
         android:theme="?attr/actionBarTheme"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -25,35 +25,44 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:text="Messages"
-            android:textSize="20sp"
+            android:textSize="25sp"
             android:textColor="@color/black"
-            android:textStyle="bold"/>
+            android:textStyle="bold"
+            android:typeface="serif"/>
 
         <!--Search results -->
         <androidx.appcompat.widget.SearchView
             android:id="@+id/searchView"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            />
-
+            android:layout_height="wrap_content" />
     </androidx.appcompat.widget.Toolbar>
 
-    <!-- RecyclerView to display messages -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerView"
+    <!-- Divider Line -->
+    <View
+        android:id="@+id/toolbarDivider"
         android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:padding="8dp"
+        android:layout_height="1dp"
+        android:background="@android:color/black"
         app:layout_constraintTop_toBottomOf="@id/toolbar"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:padding="9dp"
+        app:layout_constraintTop_toBottomOf="@id/toolbarDivider"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:background="#FFFFFF"
+        />
+
     <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/send_sms"
+        android:id="@+id/circleButton"
         android:layout_width="65dp"
         android:layout_height="65dp"
-        android:layout_marginEnd="24dp"
+        android:layout_marginEnd="28dp"
+        android:layout_marginBottom="16dp"
         android:background="@drawable/circular_shape"
         android:gravity="center"
         android:text="+"
@@ -61,7 +70,6 @@
         android:textSize="30sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/toolbar"
-        app:layout_constraintVertical_bias="0.942"
         app:layout_goneMarginBottom="16dp" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">SentinelSMS</string>
+    <!-- Other string resources -->
+    <string name="contact_icon">Contact Icon</string>
 </resources>
