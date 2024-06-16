@@ -50,11 +50,48 @@ class SmsRepository(private val context: Context) {
                 val read = it.getInt(readIndex) == 1
 
                 val contactName = getContactName(address) ?: address
-                conversations.getOrPut(contactName) { mutableListOf() }.add(
-                    SmsMessage(id, contactName, body, date, read)
-                )
+                val message = SmsMessage(id, contactName, body, date, read)
+                val existingConversation = conversations[contactName]
+                if (existingConversation == null || message.date > existingConversation.last().date) {
+                    // Either a new conversation or a newer message for an existing conversation
+                    conversations[contactName] = mutableListOf(message)
+                }
             }
         }
-        return conversations.map { Conversation(it.key, it.value) }
+        return conversations.map {Conversation(it.key, it.value) }
+    }
+
+    fun fetchMessagesForContact(contactName: String): List<SmsMessage> {
+        val messages = mutableListOf<SmsMessage>()
+        val uri: Uri = Telephony.Sms.Inbox.CONTENT_URI
+        val projection = arrayOf(
+            Telephony.Sms._ID,
+            Telephony.Sms.ADDRESS,
+            Telephony.Sms.BODY,
+            Telephony.Sms.DATE,
+            Telephony.Sms.READ
+        )
+        val selection = "${Telephony.Sms.ADDRESS} = ?"
+        val selectionArgs = arrayOf(contactName) // Assuming contactName is the phone number
+
+        val cursor: Cursor? = context.contentResolver.query(uri, projection, selection, selectionArgs, Telephony.Sms.DEFAULT_SORT_ORDER)
+        cursor?.use {
+            val idIndex = it.getColumnIndex(Telephony.Sms._ID)
+            val addressIndex = it.getColumnIndex(Telephony.Sms.ADDRESS)
+            val bodyIndex = it.getColumnIndex(Telephony.Sms.BODY)
+            val dateIndex = it.getColumnIndex(Telephony.Sms.DATE)
+            val readIndex = it.getColumnIndex(Telephony.Sms.READ)
+
+            while (it.moveToNext()) {
+                val id = it.getLong(idIndex)
+                val address = it.getString(addressIndex)
+                val body = it.getString(bodyIndex)
+                val date = it.getLong(dateIndex)
+                val read = it.getInt(readIndex) == 1
+
+                messages.add(SmsMessage(id, address, body, date, read))
+            }
+        }
+        return messages
     }
 }

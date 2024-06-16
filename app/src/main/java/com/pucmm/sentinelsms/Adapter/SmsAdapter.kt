@@ -27,7 +27,11 @@ class SmsAdapter(private val smsList: List<SmsMessage>) : RecyclerView.Adapter<S
     }
 
     override fun onBindViewHolder(holder: SmsViewHolder, position: Int) {
-        val sms = smsList[position]
+
+        // Reverse the position to display messages from bottom to top
+        val reversedPosition =smsList.size - 1 - position
+
+        val sms = smsList[reversedPosition]
         holder.tvSender.text = sms.address
         holder.tvBody.text = sms.body
         holder.tvDate.text = DateFormat.getDateTimeInstance().format(Date(sms.date))
