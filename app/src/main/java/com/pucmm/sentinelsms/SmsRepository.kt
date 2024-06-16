@@ -6,12 +6,26 @@ import android.database.Cursor
 import android.net.Uri
 import android.provider.ContactsContract
 import android.provider.Telephony
+import com.pucmm.sentinelsms.Adapter.Conversation
 
 // This class was created for the purpose of handle the fetching and processing of SMS messages and contacts.
 class SmsRepository(private val context: Context) {
 
-    fun fetchSmsMessages(): List<SmsMessage> {
-        val smsList = mutableListOf<SmsMessage>()
+    @SuppressLint("Range")
+    private fun getContactName(phoneNumber: String): String? {
+        val uri: Uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNumber))
+        val projection = arrayOf(ContactsContract.PhoneLookup.DISPLAY_NAME)
+        val cursor: Cursor? = context.contentResolver.query(uri, projection, null, null, null)
+        cursor?.use {
+            if (it.moveToFirst()) {
+                return it.getString(it.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME))
+            }
+        }
+        return null
+    }
+
+    fun fetchConversations(): List<Conversation> {
+        val conversations = mutableMapOf<String, MutableList<SmsMessage>>()
         val uri: Uri = Telephony.Sms.Inbox.CONTENT_URI
         val projection = arrayOf(
             Telephony.Sms._ID,
@@ -20,7 +34,6 @@ class SmsRepository(private val context: Context) {
             Telephony.Sms.DATE,
             Telephony.Sms.READ
         )
-
         val cursor: Cursor? = context.contentResolver.query(uri, projection, null, null, Telephony.Sms.DEFAULT_SORT_ORDER)
         cursor?.use {
             val idIndex = it.getColumnIndex(Telephony.Sms._ID)
@@ -37,22 +50,11 @@ class SmsRepository(private val context: Context) {
                 val read = it.getInt(readIndex) == 1
 
                 val contactName = getContactName(address) ?: address
-                smsList.add(SmsMessage(id, contactName, body, date, read))
+                conversations.getOrPut(contactName) { mutableListOf() }.add(
+                    SmsMessage(id, contactName, body, date, read)
+                )
             }
         }
-        return smsList
-    }
-
-    @SuppressLint("Range")
-    private fun getContactName(phoneNumber: String): String? {
-        val uri: Uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNumber))
-        val projection = arrayOf(ContactsContract.PhoneLookup.DISPLAY_NAME)
-        val cursor: Cursor? = context.contentResolver.query(uri, projection, null, null, null)
-        cursor?.use {
-            if (it.moveToFirst()) {
-                return it.getString(it.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME))
-            }
-        }
-        return null
+        return conversations.map { Conversation(it.key, it.value) }
     }
 }

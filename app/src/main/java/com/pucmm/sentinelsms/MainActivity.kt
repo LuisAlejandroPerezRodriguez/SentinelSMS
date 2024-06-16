@@ -13,6 +13,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.pucmm.sentinelsms.Adapter.ConversationAdapter
 import com.pucmm.sentinelsms.Adapter.SmsAdapter
 
 
@@ -78,9 +79,9 @@ class MainActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Fetch SMS messages and display them
-        val smsList = smsRepository.fetchSmsMessages()
-        smsAdapter = SmsAdapter(smsList)
-        recyclerView.adapter = smsAdapter
+        // Fetch conversations and display them
+        val conversations = smsRepository.fetchConversations()
+        val conversationAdapter = ConversationAdapter(conversations)
+        recyclerView.adapter = conversationAdapter
     }
 }
