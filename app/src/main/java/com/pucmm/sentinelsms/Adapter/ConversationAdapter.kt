@@ -45,7 +45,7 @@ class ConversationAdapter(private val conversations: List<Conversation>) :
         // Set click listener to open ChatActivity
         holder.itemView.setOnClickListener {
             val intent = Intent(holder.itemView.context, ChatActivity::class.java)
-            intent.putExtra("contactName", conversation.contactName)
+            intent.putExtra("contactNumber", conversation.messages[0].address)
             holder.itemView.context.startActivity(intent)
         }
     }

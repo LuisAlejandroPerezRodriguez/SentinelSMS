@@ -15,14 +15,14 @@ class ChatActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_chat) // Create this layout file
+        setContentView(R.layout.activity_chat)
 
         recyclerView = findViewById(R.id.rvChatMessages)
         recyclerView.layoutManager = LinearLayoutManager(this)
         smsRepository = SmsRepository(this)
 
-        val contactName =intent.getStringExtra("contactName") ?: ""
-        val messages = smsRepository.fetchMessagesForContact(contactName)
+        val contactNumber = intent.getStringExtra("contactNumber") ?: ""
+        val messages = smsRepository.fetchMessagesForContact(contactNumber)
         smsAdapter = SmsAdapter(messages)
         recyclerView.adapter = smsAdapter
     }

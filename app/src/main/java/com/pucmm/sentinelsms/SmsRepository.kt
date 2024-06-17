@@ -49,19 +49,21 @@ class SmsRepository(private val context: Context) {
                 val date = it.getLong(dateIndex)
                 val read = it.getInt(readIndex) == 1
 
-                val contactName = getContactName(address) ?: address
-                val message = SmsMessage(id, contactName, body, date, read)
-                val existingConversation = conversations[contactName]
-                if (existingConversation == null || message.date > existingConversation.last().date) {
-                    // Either a new conversation or a newer message for an existing conversation
-                    conversations[contactName] = mutableListOf(message)
+                val message = SmsMessage(id, address, body, date, read)
+                if (!conversations.containsKey(address)) {
+                    conversations[address] = mutableListOf()
                 }
+                conversations[address]?.add(message)
             }
         }
-        return conversations.map {Conversation(it.key, it.value) }
+
+        return conversations.map { (address, messages) ->
+            val contactName = getContactName(address) ?: address
+            Conversation(contactName, messages)
+        }
     }
 
-    fun fetchMessagesForContact(contactName: String): List<SmsMessage> {
+    fun fetchMessagesForContact(contactNumber: String): List<SmsMessage> {
         val messages = mutableListOf<SmsMessage>()
         val uri: Uri = Telephony.Sms.Inbox.CONTENT_URI
         val projection = arrayOf(
@@ -72,7 +74,7 @@ class SmsRepository(private val context: Context) {
             Telephony.Sms.READ
         )
         val selection = "${Telephony.Sms.ADDRESS} = ?"
-        val selectionArgs = arrayOf(contactName) // Assuming contactName is the phone number
+        val selectionArgs = arrayOf(contactNumber)
 
         val cursor: Cursor? = context.contentResolver.query(uri, projection, selection, selectionArgs, Telephony.Sms.DEFAULT_SORT_ORDER)
         cursor?.use {
@@ -89,7 +91,8 @@ class SmsRepository(private val context: Context) {
                 val date = it.getLong(dateIndex)
                 val read = it.getInt(readIndex) == 1
 
-                messages.add(SmsMessage(id, address, body, date, read))
+                val contactName = getContactName(address) ?: address
+                messages.add(SmsMessage(id, contactName, body, date, read))
             }
         }
         return messages
