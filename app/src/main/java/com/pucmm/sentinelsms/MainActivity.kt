@@ -4,18 +4,21 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.navigation.NavigationView
 import com.pucmm.sentinelsms.Adapter.ConversationAdapter
 import com.pucmm.sentinelsms.Adapter.SmsAdapter
-
 
 class MainActivity : AppCompatActivity() {
 
@@ -24,6 +27,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var smsRepository: SmsRepository
 
     private val REQUEST_CODE_PERMISSIONS = 101
+    private lateinit var drawerLayout: DrawerLayout
+    private lateinit var navigationView: NavigationView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,7 +45,28 @@ class MainActivity : AppCompatActivity() {
             Log.i("boton", "Button clicked")
             val intent = Intent(this, SendMessage::class.java)
             startActivity(intent)
+        }
+
+        // Setup navigation drawer
+        drawerLayout = findViewById(R.id.drawer_layout)
+        navigationView = findViewById(R.id.nav_view)
+
+        val toggle = ActionBarDrawerToggle(
+            this, drawerLayout, findViewById(R.id.toolbar),
+            R.string.navigation_drawer_open, R.string.navigation_drawer_close
+        )
+        drawerLayout.addDrawerListener(toggle)
+        toggle.syncState()
+
+        navigationView.setNavigationItemSelectedListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.nav_option1 -> showToast("Option 1")
+                R.id.nav_option2 -> showToast("Option 2")
+                R.id.nav_option3 -> showToast("Option 3")
             }
+            drawerLayout.closeDrawers()
+            true
+        }
 
         // Check and request permissions
         if (!hasPermissions()) {
@@ -48,7 +74,6 @@ class MainActivity : AppCompatActivity() {
         } else {
             initialize()
         }
-
     }
 
     private fun hasPermissions(): Boolean {
@@ -83,5 +108,9 @@ class MainActivity : AppCompatActivity() {
         val conversations = smsRepository.fetchConversations()
         val conversationAdapter = ConversationAdapter(conversations)
         recyclerView.adapter = conversationAdapter
+    }
+
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 }
