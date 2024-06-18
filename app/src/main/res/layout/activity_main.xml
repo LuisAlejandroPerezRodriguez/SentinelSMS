@@ -22,10 +22,10 @@
             android:theme="?attr/actionBarTheme"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHeight_default="wrap"
-            app:layout_constraintWidth_default="wrap"
-            app:title="Messages" />
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <!-- Menu icon will appear here -->
+        </androidx.appcompat.widget.Toolbar>
 
         <!-- Divider Line -->
         <View
