@@ -14,8 +14,6 @@ import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
 import android.Manifest
 
-
-
 class ChatActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
@@ -64,7 +62,7 @@ class ChatActivity : AppCompatActivity() {
             etMessageInput.text.clear()
             val newMessage = SmsMessage(System.currentTimeMillis(), myNumber, message, System.currentTimeMillis(), true)
             smsAdapter.addMessage(newMessage)
-            recyclerView.scrollToPosition(0)
+            recyclerView.scrollToPosition(smsAdapter.itemCount - 1) // Scroll to the bottom
         } else {
             Toast.makeText(this, "Message cannot be empty", Toast.LENGTH_SHORT).show()
         }
