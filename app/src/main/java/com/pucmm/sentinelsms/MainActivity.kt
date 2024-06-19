@@ -45,13 +45,12 @@ class MainActivity : AppCompatActivity() {
         toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
 
+        /* Search contacs or numbers
         val button = findViewById<AppCompatButton>(R.id.send_sms)
         button.setOnClickListener {
             Log.i("boton", "Button clicked")
-            val intent = Intent(this, SendMessage::class.java)
-            startActivity(intent)
         }
-
+        */
         // Setup navigation drawer
         drawerLayout = findViewById(R.id.drawer_layout)
         navigationView = findViewById(R.id.nav_view)
