@@ -49,7 +49,8 @@ class SmsRepository(private val context: Context) {
                 val date = it.getLong(dateIndex)
                 val read = it.getInt(readIndex) == 1
 
-                val message = SmsMessage(id, address, body, date, read)
+
+                val message = SmsMessage(id, address, body, date, read, isSent = false)
                 if (!conversations.containsKey(address)) {
                     conversations[address] = mutableListOf()
                 }
@@ -63,15 +64,31 @@ class SmsRepository(private val context: Context) {
         }
     }
 
-    fun fetchMessagesForContact(contactNumber: String): List<SmsMessage> {
+    fun fetchMessagesForContact(contactNumber: String):List<SmsMessage> {
         val messages = mutableListOf<SmsMessage>()
-        val uri: Uri = Telephony.Sms.Inbox.CONTENT_URI
+
+        // Fetch from Inbox
+        fetchMessagesFromUri(Telephony.Sms.Inbox.CONTENT_URI, contactNumber, messages)
+
+        // Fetch from Sent
+        fetchMessagesFromUri(Telephony.Sms.Sent.CONTENT_URI, contactNumber, messages)
+
+        // Sort messages by date (ascending)
+        messages.sortBy { it.date }
+
+        return messages
+    }
+
+    // Helper function to fetch messages from a given URI
+    @SuppressLint("Range")
+    private fun fetchMessagesFromUri(uri:Uri, contactNumber: String, messages: MutableList<SmsMessage>) {
         val projection = arrayOf(
             Telephony.Sms._ID,
             Telephony.Sms.ADDRESS,
             Telephony.Sms.BODY,
             Telephony.Sms.DATE,
-            Telephony.Sms.READ
+            Telephony.Sms.READ,
+            Telephony.Sms.TYPE // Add this to differentiate between sent and received messages
         )
         val selection = "${Telephony.Sms.ADDRESS} = ?"
         val selectionArgs = arrayOf(contactNumber)
@@ -83,6 +100,7 @@ class SmsRepository(private val context: Context) {
             val bodyIndex = it.getColumnIndex(Telephony.Sms.BODY)
             val dateIndex = it.getColumnIndex(Telephony.Sms.DATE)
             val readIndex = it.getColumnIndex(Telephony.Sms.READ)
+            val typeIndex = it.getColumnIndex(Telephony.Sms.TYPE) // Get the message type
 
             while (it.moveToNext()) {
                 val id = it.getLong(idIndex)
@@ -90,11 +108,11 @@ class SmsRepository(private val context: Context) {
                 val body = it.getString(bodyIndex)
                 val date = it.getLong(dateIndex)
                 val read = it.getInt(readIndex) == 1
+                val type = it.getInt(typeIndex) // Get the message type
 
                 val contactName = getContactName(address) ?: address
-                messages.add(SmsMessage(id, contactName, body, date, read))
+                messages.add(SmsMessage(id, contactName, body, date, read, type == Telephony.Sms.MESSAGE_TYPE_SENT)) // Add isSent flag
             }
         }
-        return messages
     }
 }

@@ -30,10 +30,9 @@ class SmsAdapter(private var smsList: MutableList<SmsMessage>, private val myNum
     }
 
     override fun onBindViewHolder(holder: SmsViewHolder, position: Int) {
-        val reversedPosition = smsList.size - 1 - position
-        val sms = smsList[reversedPosition]
+        val sms = smsList[position] // Access messages in normal order
 
-        if (sms.address == myNumber) {
+        if (sms.isSent) {
             holder.tvSender.text = "Me"
             holder.tvBody.setBackgroundResource(R.drawable.message_background_sent)
             holder.messageContainer.gravity = Gravity.END
@@ -48,11 +47,12 @@ class SmsAdapter(private var smsList: MutableList<SmsMessage>, private val myNum
         holder.ivContactIcon.setImageResource(R.drawable.ic_contact_default)
     }
 
+
     override fun getItemCount() = smsList.size
 
     fun addMessage(message: SmsMessage) {
-        smsList.add(0, message) // Add to the beginning for reversed display
-        notifyItemInserted(0)
+        smsList.add(message) // Add to the end of the list
+        notifyItemInserted(smsList.size - 1) // Notify of insertion at the end
     }
 
     fun updateMessages(newMessages: MutableList<SmsMessage>) {

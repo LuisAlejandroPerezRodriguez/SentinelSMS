@@ -83,9 +83,9 @@ class ChatActivity : AppCompatActivity() {
         if (message.isNotEmpty()) {
             sendSms(contactNumber, message)
             etMessageInput.text.clear()
-            val newMessage = SmsMessage(System.currentTimeMillis(), myNumber, message, System.currentTimeMillis(), true)
+            val newMessage = SmsMessage(System.currentTimeMillis(), myNumber, message, System.currentTimeMillis(), true, true) // Mark as sent
             smsAdapter.addMessage(newMessage)
-            recyclerView.scrollToPosition(smsAdapter.itemCount - 1) // Scroll to the bottom
+            recyclerView.scrollToPosition(smsAdapter.itemCount - 1)
         } else {
             Toast.makeText(this, "Message cannot be empty", Toast.LENGTH_SHORT).show()
         }
