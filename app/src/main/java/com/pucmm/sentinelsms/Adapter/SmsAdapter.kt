@@ -14,7 +14,7 @@ import java.util.*
 import android.widget.LinearLayout
 
 
-class SmsAdapter(private val smsList: MutableList<SmsMessage>, private val myNumber: String) : RecyclerView.Adapter<SmsAdapter.SmsViewHolder>() {
+class SmsAdapter(private var smsList: MutableList<SmsMessage>, private val myNumber: String) : RecyclerView.Adapter<SmsAdapter.SmsViewHolder>() {
 
     class SmsViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val ivContactIcon: ImageView = itemView.findViewById(R.id.ivContactIcon)
@@ -54,5 +54,11 @@ class SmsAdapter(private val smsList: MutableList<SmsMessage>, private val myNum
         smsList.add(0, message) // Add to the beginning for reversed display
         notifyItemInserted(0)
     }
+
+    fun updateMessages(newMessages: MutableList<SmsMessage>) {
+        smsList = newMessages
+        notifyDataSetChanged()
+    }
 }
+
 

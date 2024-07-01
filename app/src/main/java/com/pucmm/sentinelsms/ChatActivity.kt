@@ -13,6 +13,10 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
 import android.Manifest
+import android.database.ContentObserver
+import android.os.Handler
+import android.os.Looper
+import android.provider.Telephony
 
 class ChatActivity : AppCompatActivity() {
 
@@ -23,7 +27,18 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var btnSend: Button
     private lateinit var contactNumber: String
     private val smsPermissionRequestCode = 100
-    private val myNumber = "YourNumberHere" // Replace with your actual number
+    private val myNumber = "8299815535" // Replace with your actual number
+
+
+
+    private val smsObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean) {
+            super.onChange(selfChange)
+            // Fetch new messages and update the adapter
+            val messages = smsRepository.fetchMessagesForContact(contactNumber).toMutableList()
+            smsAdapter.updateMessages(messages)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,6 +68,14 @@ class ChatActivity : AppCompatActivity() {
                 sendSmsMessage()
             }
         }
+        // Register the content observer
+        contentResolver.registerContentObserver(Telephony.Sms.CONTENT_URI, true, smsObserver)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Unregister the content observer
+        contentResolver.unregisterContentObserver(smsObserver)
     }
 
     private fun sendSmsMessage() {
