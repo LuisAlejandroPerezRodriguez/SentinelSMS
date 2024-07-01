@@ -60,7 +60,7 @@ class SmsRepository(private val context: Context) {
 
         return conversations.map { (address, messages) ->
             val contactName = getContactName(address) ?: address
-            Conversation(contactName, messages)
+            Conversation(contactName, messages.reversed()) // Reverse the message list
         }
     }
 

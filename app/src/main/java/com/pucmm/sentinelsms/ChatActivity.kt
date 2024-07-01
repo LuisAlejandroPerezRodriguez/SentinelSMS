@@ -54,6 +54,8 @@ class ChatActivity : AppCompatActivity() {
         val messages = smsRepository.fetchMessagesForContact(contactNumber).toMutableList()
         smsAdapter = SmsAdapter(messages, myNumber)
         recyclerView.adapter = smsAdapter
+        // Scroll to the bottom after setting the adapter and layout manager
+        recyclerView.scrollToPosition(smsAdapter.itemCount - 1)
 
         btnSend.setOnClickListener {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)
