@@ -44,22 +44,31 @@ class SecureMessagingManager(
     }
 
     fun sendMessage(senderId: String, receiverId: String, message: String, callback: (Boolean) -> Unit) {
-        val secretKey = keyStoreManager.getSecretKey("$senderId-$receiverId")
-        if (secretKey != null) {
-            val secretKeySpec = SecretKeySpec(secretKey.encoded, "AES")
-            val encryptedMessage = aesUtils.encrypt(secretKeySpec, message.toByteArray(Charsets.UTF_8))?.let { Base64.encodeToString(it, Base64.DEFAULT) }
-            if (encryptedMessage != null) {
-                firebaseDatabaseManager.sendMessage(senderId, receiverId, encryptedMessage) { success ->
-                    callback(success)
+        firebaseDatabaseManager.getUserPublicKey(receiverId) { recipientPublicKeyBase64 ->
+            if (recipientPublicKeyBase64 != null) {
+                // Receiver is a registered user, send encrypted message
+                val secretKey = keyStoreManager.getSecretKey("$senderId-$receiverId")
+                if (secretKey != null) {
+                    val secretKeySpec = SecretKeySpec(secretKey.encoded, "AES")
+                    val encryptedMessage = aesUtils.encrypt(secretKeySpec, message.toByteArray(Charsets.UTF_8))?.let { Base64.encodeToString(it, Base64.DEFAULT) }
+                    if (encryptedMessage != null) {
+                        firebaseDatabaseManager.sendMessage(senderId, receiverId, encryptedMessage) { success ->
+                            callback(success)
+                        }
+                    } else {
+                        callback(false)
+                    }
+                } else {
+                    callback(false)
                 }
             } else {
-                callback(false)
+                // Receiver is not a registered user, send plain text message
+                firebaseDatabaseManager.sendMessage(senderId, receiverId, message) { success ->
+                    callback(success)
+                }
             }
-        } else {
-            callback(false)
         }
     }
-
 
     fun receiveMessages(userId: String, senderId: String, callback: (List<String>) -> Unit) {
         firebaseDatabaseManager.getMessagesForUser(userId) { messages ->

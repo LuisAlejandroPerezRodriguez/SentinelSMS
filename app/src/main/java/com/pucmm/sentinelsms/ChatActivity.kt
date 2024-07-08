@@ -17,6 +17,11 @@ import android.database.ContentObserver
 import android.os.Handler
 import android.os.Looper
 import android.provider.Telephony
+import com.pucmm.sentinelsms.security.AESUtils
+import com.pucmm.sentinelsms.security.DHKeyExchange
+import com.pucmm.sentinelsms.security.KeyStoreManager
+import com.example.securemessaging.SecureMessagingManager
+import FirebaseDatabaseManager
 
 class ChatActivity : AppCompatActivity() {
 
@@ -29,7 +34,12 @@ class ChatActivity : AppCompatActivity() {
     private val smsPermissionRequestCode = 100
     private val myNumber = "8299815535" // Replace with your actual number
 
-
+    private val secureMessagingManager = SecureMessagingManager(
+        KeyStoreManager,
+        DHKeyExchange,
+        AESUtils,
+        FirebaseDatabaseManager()
+    )
 
     private val smsObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
         override fun onChange(selfChange: Boolean) {
@@ -83,11 +93,40 @@ class ChatActivity : AppCompatActivity() {
     private fun sendSmsMessage() {
         val message = etMessageInput.text.toString()
         if (message.isNotEmpty()) {
-            sendSms(contactNumber, message)
-            etMessageInput.text.clear()
-            val newMessage = SmsMessage(System.currentTimeMillis(), myNumber, message, System.currentTimeMillis(), true, true) // Mark as sent
-            smsAdapter.addMessage(newMessage)
-            recyclerView.scrollToPosition(smsAdapter.itemCount - 1)
+            secureMessagingManager.initiateSecureConversation(myNumber, contactNumber) { secureConversation ->
+                if (secureConversation) {
+                    secureMessagingManager.sendMessage(myNumber, contactNumber, message) { success ->
+                        if (success) {
+                            etMessageInput.text.clear()
+                            val newMessage = SmsMessage(
+                                System.currentTimeMillis(),
+                                myNumber,
+                                message,
+                                System.currentTimeMillis(),
+                                true,
+                                true
+                            ) // Mark as sent
+                            smsAdapter.addMessage(newMessage)
+                            recyclerView.scrollToPosition(smsAdapter.itemCount - 1)
+                        } else {
+                            Toast.makeText(this, "Failed to send encrypted message", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else {
+                    sendSms(contactNumber, message)
+                    etMessageInput.text.clear()
+                    val newMessage = SmsMessage(
+                        System.currentTimeMillis(),
+                        myNumber,
+                        message,
+                        System.currentTimeMillis(),
+                        true,
+                        true
+                    ) // Mark as sent
+                    smsAdapter.addMessage(newMessage)
+                    recyclerView.scrollToPosition(smsAdapter.itemCount - 1)
+                }
+            }
         } else {
             Toast.makeText(this, "Message cannot be empty", Toast.LENGTH_SHORT).show()
         }
@@ -102,6 +141,34 @@ class ChatActivity : AppCompatActivity() {
             Toast.makeText(this, "Failed to send message", Toast.LENGTH_SHORT).show()
             e.printStackTrace()
         }
+    }
+
+    private fun receiveMessages() {
+        secureMessagingManager.receiveMessages(myNumber, contactNumber) { decryptedMessages ->
+            if (decryptedMessages.isEmpty()) {
+                // If there are no decrypted messages, fetch regular SMS messages
+                val messages = smsRepository.fetchMessagesForContact(contactNumber).toMutableList()
+                smsAdapter.updateMessages(messages)
+            } else {
+                // Update adapter with decrypted messages
+                val smsMessages = decryptedMessages.map { message ->
+                    SmsMessage(
+                        System.currentTimeMillis(),
+                        contactNumber,
+                        message,
+                        System.currentTimeMillis(),
+                        false,
+                        false
+                    )
+                }.toMutableList()
+                smsAdapter.updateMessages(smsMessages)
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        receiveMessages()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
