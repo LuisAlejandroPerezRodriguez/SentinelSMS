@@ -1,6 +1,7 @@
 package com.pucmm.sentinelsms
 
 import android.app.Dialog
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
@@ -37,6 +38,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var toolbar: Toolbar
 
     private lateinit var auth: FirebaseAuth
+    private lateinit var currentUserUid: String
+    private var authDialog: Dialog? = null
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -128,13 +132,18 @@ class MainActivity : AppCompatActivity() {
         } else {
             // User is already signed in
             // Proceed with your app logic
+            initializeApp()
         }
     }
 
     private fun showAuthDialog() {
-        val dialog = Dialog(this)
+        val dialog = Dialog(this, android.R.style.Theme_Material_Dialog_NoActionBar_MinWidth)
         dialog.setContentView(R.layout.dialog_auth)
+        dialog.setCancelable(false)
 
+        authDialog = dialog // Initialize the authDialog variable
+
+        // Set up click listeners for the buttons
         val etEmail = dialog.findViewById<EditText>(R.id.etEmail)
         val etPassword = dialog.findViewById<EditText>(R.id.etPassword)
         val btnSignIn = dialog.findViewById<Button>(R.id.btnSignIn)
@@ -146,6 +155,7 @@ class MainActivity : AppCompatActivity() {
 
             if (email.isNotEmpty() && password.isNotEmpty()) {
                 signInWithEmailAndPassword(email, password)
+                dialog.dismiss()
             } else {
                 showToast("Please enter email and password")
             }
@@ -157,6 +167,7 @@ class MainActivity : AppCompatActivity() {
 
             if (email.isNotEmpty() && password.isNotEmpty()) {
                 createUserWithEmailAndPassword(email, password)
+                dialog.dismiss()
             } else {
                 showToast("Please enter email and password")
             }
@@ -170,10 +181,15 @@ class MainActivity : AppCompatActivity() {
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
                     val user = task.result?.user
-                    showToast("Sign in successful")
-                    // Proceed with your app logic
+                    runOnUiThread {
+                        showToast("Sign in successful")
+                        currentUserUid = user?.uid ?: ""
+                        initializeApp()
+                    }
                 } else {
-                    showToast("Sign in failed: ${task.exception?.message}")
+                    runOnUiThread {
+                        showToast("Sign in failed: ${task.exception?.message}")
+                    }
                 }
             }
     }
@@ -183,14 +199,29 @@ class MainActivity : AppCompatActivity() {
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
                     val user = task.result?.user
-                    showToast("Sign up successful")
-                    // Proceed with your app logic
+                    runOnUiThread {
+                        showToast("Sign up successful")
+                        currentUserUid = user?.uid ?: ""
+                        initializeApp()
+                    }
                 } else {
-                    showToast("Sign up failed: ${task.exception?.message}")
+                    runOnUiThread {
+                        showToast("Sign up failed: ${task.exception?.message}")
+                    }
                 }
             }
     }
 
+
+    private fun initializeApp() {
+        // Initialize your app logic and UI here
+        // For example, you can show the RecyclerView and other UI elements
+        recyclerView.visibility = View.VISIBLE
+
+        // Dismiss the authentication dialog
+        authDialog?.dismiss()
+        authDialog = null
+    }
     override fun onStart() {
         super.onStart()
         val currentUser = auth.currentUser
@@ -200,5 +231,12 @@ class MainActivity : AppCompatActivity() {
     private fun updateUI(currentUser: FirebaseUser?) {
         // Update the UI based on the user's authentication state
         // For example, you can show/hide certain UI elements or navigate to different screens
+        if (currentUser == null) {
+            // User is not signed in, show the authentication dialog
+            showAuthDialog()
+        } else {
+            // User is signed in, initialize the app
+            initializeApp()
+        }
     }
 }
