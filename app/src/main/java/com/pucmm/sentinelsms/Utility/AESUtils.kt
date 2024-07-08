@@ -35,7 +35,7 @@ object AESUtils {
         }
     }
 
-    fun decrypt(secretKey: SecretKey, encryptedData: ByteArray, gcmParameterSpec: GCMParameterSpec): ByteArray? {
+    fun decrypt(secretKey: SecretKey, encryptedData: ByteArray, gcmParameterSpec: GCMParameterSpec? = null): ByteArray? {
         return try {
             val cipher = Cipher.getInstance(AES_TRANSFORMATION)
             cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmParameterSpec)
