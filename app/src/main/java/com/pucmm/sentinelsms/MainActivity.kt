@@ -1,9 +1,12 @@
 package com.pucmm.sentinelsms
 
-import android.content.Intent
+import android.app.Dialog
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.widget.Button
+import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.ActionBarDrawerToggle
@@ -17,9 +20,10 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.navigation.NavigationView
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.pucmm.sentinelsms.Adapter.ConversationAdapter
 import com.pucmm.sentinelsms.Adapter.SmsAdapter
-import androidx.appcompat.widget.AppCompatButton
 
 class MainActivity : AppCompatActivity() {
 
@@ -32,6 +36,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navigationView: NavigationView
     private lateinit var toolbar: Toolbar
 
+    private lateinit var auth: FirebaseAuth
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -41,16 +47,9 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-
         toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
 
-        /* Search contacs or numbers
-        val button = findViewById<AppCompatButton>(R.id.send_sms)
-        button.setOnClickListener {
-            Log.i("boton", "Button clicked")
-        }
-        */
         // Setup navigation drawer
         drawerLayout = findViewById(R.id.drawer_layout)
         navigationView = findViewById(R.id.nav_view)
@@ -77,6 +76,7 @@ class MainActivity : AppCompatActivity() {
             requestPermissions()
         } else {
             initialize()
+            setupAuth()
         }
     }
 
@@ -97,6 +97,7 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == REQUEST_CODE_PERMISSIONS) {
             if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
                 initialize()
+                setupAuth()
             } else {
                 // Permissions not granted. Handle appropriately.
             }
@@ -116,5 +117,88 @@ class MainActivity : AppCompatActivity() {
 
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun setupAuth() {
+        auth = FirebaseAuth.getInstance()
+        val currentUser = auth.currentUser
+
+        if (currentUser == null) {
+            showAuthDialog()
+        } else {
+            // User is already signed in
+            // Proceed with your app logic
+        }
+    }
+
+    private fun showAuthDialog() {
+        val dialog = Dialog(this)
+        dialog.setContentView(R.layout.dialog_auth)
+
+        val etEmail = dialog.findViewById<EditText>(R.id.etEmail)
+        val etPassword = dialog.findViewById<EditText>(R.id.etPassword)
+        val btnSignIn = dialog.findViewById<Button>(R.id.btnSignIn)
+        val btnSignUp = dialog.findViewById<Button>(R.id.btnSignUp)
+
+        btnSignIn.setOnClickListener {
+            val email = etEmail.text.toString().trim()
+            val password = etPassword.text.toString().trim()
+
+            if (email.isNotEmpty() && password.isNotEmpty()) {
+                signInWithEmailAndPassword(email, password)
+            } else {
+                showToast("Please enter email and password")
+            }
+        }
+
+        btnSignUp.setOnClickListener {
+            val email = etEmail.text.toString().trim()
+            val password = etPassword.text.toString().trim()
+
+            if (email.isNotEmpty() && password.isNotEmpty()) {
+                createUserWithEmailAndPassword(email, password)
+            } else {
+                showToast("Please enter email and password")
+            }
+        }
+
+        dialog.show()
+    }
+
+    private fun signInWithEmailAndPassword(email: String, password: String) {
+        auth.signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener(this) { task ->
+                if (task.isSuccessful) {
+                    val user = task.result?.user
+                    showToast("Sign in successful")
+                    // Proceed with your app logic
+                } else {
+                    showToast("Sign in failed: ${task.exception?.message}")
+                }
+            }
+    }
+
+    private fun createUserWithEmailAndPassword(email: String, password: String) {
+        auth.createUserWithEmailAndPassword(email, password)
+            .addOnCompleteListener(this) { task ->
+                if (task.isSuccessful) {
+                    val user = task.result?.user
+                    showToast("Sign up successful")
+                    // Proceed with your app logic
+                } else {
+                    showToast("Sign up failed: ${task.exception?.message}")
+                }
+            }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val currentUser = auth.currentUser
+        updateUI(currentUser)
+    }
+
+    private fun updateUI(currentUser: FirebaseUser?) {
+        // Update the UI based on the user's authentication state
+        // For example, you can show/hide certain UI elements or navigate to different screens
     }
 }
