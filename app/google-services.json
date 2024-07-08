@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "102626118266",
+    "project_id": "sentinelsms-da372",
+    "storage_bucket": "sentinelsms-da372.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:102626118266:android:21ebc89791ce4a1262c9c3",
+        "android_client_info": {
+          "package_name": "com.pucmm.sentinelsms"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCEOwgSmb5ID9WFBjSPGgH9PFmXng2pbro"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
