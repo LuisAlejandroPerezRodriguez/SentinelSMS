@@ -137,6 +137,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showAuthDialog() {
+        // Dismiss the existing dialog if it's showing
+        authDialog?.dismiss()
+
         val dialog = Dialog(this, android.R.style.Theme_Material_Dialog_NoActionBar_MinWidth)
         dialog.setContentView(R.layout.dialog_auth)
         dialog.setCancelable(false)
@@ -185,10 +188,14 @@ class MainActivity : AppCompatActivity() {
                         showToast("Sign in successful")
                         currentUserUid = user?.uid ?: ""
                         initializeApp()
+                        // Dismiss the authentication dialog after successful sign-in
+                        authDialog?.dismiss()
+                        authDialog = null
                     }
                 } else {
                     runOnUiThread {
                         showToast("Sign in failed: ${task.exception?.message}")
+                        // Do not dismiss the authentication dialog on sign-in failure
                     }
                 }
             }
@@ -197,16 +204,15 @@ class MainActivity : AppCompatActivity() {
     private fun createUserWithEmailAndPassword(email: String, password: String) {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
-                if (task.isSuccessful) {
-                    val user = task.result?.user
-                    runOnUiThread {
+                runOnUiThread {
+                    if (task.isSuccessful) {
+                        val user = task.result?.user
                         showToast("Sign up successful")
                         currentUserUid = user?.uid ?: ""
-                        initializeApp()
-                    }
-                } else {
-                    runOnUiThread {
+                        // Do not dismiss the authentication dialog after sign-up
+                    } else {
                         showToast("Sign up failed: ${task.exception?.message}")
+                        // Do not dismiss the authentication dialog on sign-up failure
                     }
                 }
             }
@@ -217,15 +223,18 @@ class MainActivity : AppCompatActivity() {
         // Initialize your app logic and UI here
         // For example, you can show the RecyclerView and other UI elements
         recyclerView.visibility = View.VISIBLE
-
-        // Dismiss the authentication dialog
-        authDialog?.dismiss()
-        authDialog = null
     }
     override fun onStart() {
         super.onStart()
         val currentUser = auth.currentUser
         updateUI(currentUser)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Dismiss the authentication dialog
+        authDialog?.dismiss()
+        authDialog = null
     }
 
     private fun updateUI(currentUser: FirebaseUser?) {
