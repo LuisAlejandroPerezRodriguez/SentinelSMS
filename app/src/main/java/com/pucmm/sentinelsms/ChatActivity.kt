@@ -22,9 +22,10 @@ import com.pucmm.sentinelsms.security.DHKeyExchange
 import com.pucmm.sentinelsms.security.KeyStoreManager
 import com.example.securemessaging.SecureMessagingManager
 import FirebaseDatabaseManager
+import android.content.Context
+import android.telephony.TelephonyManager
 
 class ChatActivity : AppCompatActivity() {
-
     private lateinit var recyclerView: RecyclerView
     private lateinit var smsAdapter: SmsAdapter
     private lateinit var smsRepository: SmsRepository
@@ -32,7 +33,8 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var btnSend: Button
     private lateinit var contactNumber: String
     private val smsPermissionRequestCode = 100
-    private val myNumber = "8299815535" // Replace with your actual number
+    private lateinit var telephonyManager: TelephonyManager
+    private lateinit var myNumber: String
 
     private val secureMessagingManager = SecureMessagingManager(
         KeyStoreManager,
@@ -53,6 +55,12 @@ class ChatActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat)
+
+        // Initialize the TelephonyManager
+        telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+
+        // Get the user's phone number
+        myNumber = telephonyManager.line1Number ?: ""
 
         recyclerView = findViewById(R.id.rvChatMessages)
         etMessageInput = findViewById(R.id.etMessageInput)
