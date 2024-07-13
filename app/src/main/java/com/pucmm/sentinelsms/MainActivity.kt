@@ -26,6 +26,8 @@ import com.pucmm.sentinelsms.Adapter.ConversationAdapter
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
+import com.pucmm.sentinelsms.database.FirebaseDatabaseManager
+import com.pucmm.sentinelsms.security.CryptoManager
 
 class MainActivity : AppCompatActivity() {
 
@@ -199,11 +201,15 @@ class MainActivity : AppCompatActivity() {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-                    runOnUiThread {
-                        showToast("Sign in successful")
-                        initializeApp()
-                        authDialog?.dismiss()
-                        authDialog = null
+                    val user = auth.currentUser
+                    if (user != null) {
+                        runOnUiThread {
+                            showToast("Sign in successful")
+                            onSuccessfulAuth(user.uid)
+                            initializeApp()
+                            authDialog?.dismiss()
+                            authDialog = null
+                        }
                     }
                 } else {
                     runOnUiThread {
@@ -214,41 +220,45 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun createUserWithEmailAndPassword(email: String, password: String, phoneNumber: String) {
-        Log.d("Firebase", "Attempting to create user: $email")
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
-                if (task.isSuccessful) {
-                    val user = task.result?.user
-                    Log.d("Firebase", "User created successfully: ${user?.uid}")
-                    user?.uid?.let { uid ->
-                        Log.d("Firebase", "Calling saveUserData for UID: $uid")
-                        saveUserData(uid, phoneNumber)
-                    }
-                    signInWithEmailAndPassword(email, password)
-                } else {
-                    Log.e("Firebase", "Sign up failed", task.exception)
-                    runOnUiThread {
+                runOnUiThread {
+                    if (task.isSuccessful) {
+                        val user = auth.currentUser
+                        if (user != null) {
+                            showToast("Sign up successful")
+                            setupUserCrypto(user.uid, phoneNumber)
+                            onSuccessfulAuth(user.uid)
+                            signInWithEmailAndPassword(email, password)
+                        }
+                    } else {
                         showToast("Sign up failed: ${task.exception?.message}")
                     }
                 }
             }
     }
 
+    private fun setupUserCrypto(userId: String, phoneNumber: String) {
+        val publicKeyBase64 = CryptoManager.generateAndStoreKeyPair()
+        if (publicKeyBase64 != null) {
+            FirebaseDatabaseManager.saveUserData(userId, phoneNumber, publicKeyBase64) { success ->
+                if (success) {
+                    Log.d("MainActivity", "Public key saved successfully for user: $userId")
+                } else {
+                    Log.e("MainActivity", "Failed to save public key for user: $userId")
+                    showToast("Failed to set up secure messaging. Please try again later.")
+                }
+            }
+        } else {
+            Log.e("MainActivity", "Failed to generate key pair for user: $userId")
+            showToast("Failed to set up secure messaging. Please try again later.")
+        }
+    }
 
-    private fun saveUserData(uid: String, phoneNumber: String) {
-        Log.d("Firebase", "Attempting to save user data for UID: $uid")
-        val userRef = database.getReference("users").child(uid)
-        val userData = hashMapOf("phoneNumber" to phoneNumber)
-        userRef.setValue(userData)
-            .addOnSuccessListener {
-                Log.d("Firebase", "User data saved successfully for UID: $uid")
-            }
-            .addOnFailureListener { e ->
-                Log.e("Firebase", "Error saving user data for UID: $uid", e)
-            }
-            .addOnCompleteListener {
-                Log.d("Firebase", "Save operation completed for UID: $uid")
-            }
+    // Call this function after successful login or registration
+    private fun onSuccessfulAuth(userId: String) {
+        // You can add more post-authentication logic here
+        Log.d("MainActivity", "Authentication successful for user: $userId")
     }
 
 
@@ -260,14 +270,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        if (::auth.isInitialized) {
-            val currentUser = auth.currentUser
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            onSuccessfulAuth(currentUser.uid)
             updateUI(currentUser)
         } else {
-            Log.e("MainActivity", "Auth is not initialized")
-            // Handle the case where auth is not initialized
-            // You might want to call setupAuth() here or show an error message
-            setupAuth()
+            showAuthDialog()
         }
     }
 

@@ -1,29 +1,27 @@
 package com.pucmm.sentinelsms
 
-import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
-import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.pucmm.sentinelsms.Adapter.SmsAdapter
-import android.widget.Toast
-import android.telephony.SmsManager
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import android.content.pm.PackageManager
 import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.database.ContentObserver
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Telephony
-import com.pucmm.sentinelsms.security.AESUtils
-import com.pucmm.sentinelsms.security.DHKeyExchange
-import com.pucmm.sentinelsms.security.KeyStoreManager
-import com.example.securemessaging.SecureMessagingManager
-import FirebaseDatabaseManager
-import android.content.Context
+import android.telephony.SmsManager
 import android.telephony.TelephonyManager
+import android.widget.Button
+import android.widget.EditText
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.pucmm.sentinelsms.Adapter.SmsAdapter
+import com.pucmm.sentinelsms.database.FirebaseDatabaseManager
+import com.pucmm.sentinelsms.security.CryptoManager
+import javax.crypto.spec.SecretKeySpec
 
 class ChatActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
@@ -35,20 +33,13 @@ class ChatActivity : AppCompatActivity() {
     private val smsPermissionRequestCode = 100
     private lateinit var telephonyManager: TelephonyManager
     private lateinit var myNumber: String
-
-    private val secureMessagingManager = SecureMessagingManager(
-        KeyStoreManager,
-        DHKeyExchange,
-        AESUtils,
-        FirebaseDatabaseManager()
-    )
+    private var secretKey: SecretKeySpec? = null
+    private var isSecureConversation = false
 
     private val smsObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
         override fun onChange(selfChange: Boolean) {
             super.onChange(selfChange)
-            // Fetch new messages and update the adapter
-            val messages = smsRepository.fetchMessagesForContact(contactNumber).toMutableList()
-            smsAdapter.updateMessages(messages)
+            receiveMessages() // This will now fetch both local and Firebase messages
         }
     }
 
@@ -56,10 +47,7 @@ class ChatActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat)
 
-        // Initialize the TelephonyManager
         telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-
-        // Get the user's phone number
         myNumber = telephonyManager.line1Number ?: ""
 
         recyclerView = findViewById(R.id.rvChatMessages)
@@ -72,7 +60,6 @@ class ChatActivity : AppCompatActivity() {
         val messages = smsRepository.fetchMessagesForContact(contactNumber).toMutableList()
         smsAdapter = SmsAdapter(messages, myNumber)
         recyclerView.adapter = smsAdapter
-        // Scroll to the bottom after setting the adapter and layout manager
         recyclerView.scrollToPosition(smsAdapter.itemCount - 1)
 
         btnSend.setOnClickListener {
@@ -88,55 +75,82 @@ class ChatActivity : AppCompatActivity() {
                 sendSmsMessage()
             }
         }
-        // Register the content observer
+
         contentResolver.registerContentObserver(Telephony.Sms.CONTENT_URI, true, smsObserver)
+        initiateSecureConversation()
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        // Unregister the content observer
-        contentResolver.unregisterContentObserver(smsObserver)
+    private fun initiateSecureConversation() {
+        FirebaseDatabaseManager.getUserPublicKey(contactNumber) { publicKeyBase64 ->
+            if (publicKeyBase64 != null) {
+                val generatedSecretKey = CryptoManager.performKeyExchange(publicKeyBase64)
+                if (generatedSecretKey != null) {
+                    secretKey = generatedSecretKey
+                    isSecureConversation = true
+                    runOnUiThread {
+                        Toast.makeText(this, "Secure conversation initiated", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    runOnUiThread {
+                        Toast.makeText(this, "Failed to initiate secure conversation", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } else {
+                runOnUiThread {
+                    Toast.makeText(this, "Contact not registered for secure messaging", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 
     private fun sendSmsMessage() {
         val message = etMessageInput.text.toString()
         if (message.isNotEmpty()) {
-            secureMessagingManager.initiateSecureConversation(myNumber, contactNumber) { secureConversation ->
-                if (secureConversation) {
-                    secureMessagingManager.sendMessage(myNumber, contactNumber, message) { success ->
-                        if (success) {
-                            etMessageInput.text.clear()
-                            val newMessage = SmsMessage(
-                                System.currentTimeMillis(),
-                                myNumber,
-                                message,
-                                System.currentTimeMillis(),
-                                true,
-                                true
-                            ) // Mark as sent
-                            smsAdapter.addMessage(newMessage)
-                            recyclerView.scrollToPosition(smsAdapter.itemCount - 1)
-                        } else {
-                            Toast.makeText(this, "Failed to send encrypted message", Toast.LENGTH_SHORT).show()
-                        }
+            if (isSecureConversation && secretKey != null) {
+                sendEncryptedMessage(message)
+            } else {
+                sendSms(contactNumber, message)
+            }
+            etMessageInput.text.clear()
+            val newMessage = SmsMessage(
+                System.currentTimeMillis(),
+                myNumber,
+                message,
+                System.currentTimeMillis(),
+                true,
+                true
+            )
+            smsAdapter.addMessage(newMessage)
+            recyclerView.scrollToPosition(smsAdapter.itemCount - 1)
+        } else {
+            Toast.makeText(this, "Message cannot be empty", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun sendEncryptedMessage(message: String) {
+        val encryptedMessage = CryptoManager.encryptMessage(message, secretKey!!)
+        if (encryptedMessage != null) {
+            FirebaseDatabaseManager.sendMessage(myNumber, contactNumber, encryptedMessage) { success ->
+                runOnUiThread {
+                    if (success) {
+                        val newMessage = SmsMessage(
+                            System.currentTimeMillis(),
+                            myNumber,
+                            "[Encrypted] $message",
+                            System.currentTimeMillis(),
+                            true,
+                            true
+                        )
+                        smsAdapter.addMessage(newMessage)
+                        recyclerView.scrollToPosition(smsAdapter.itemCount - 1)
+                        Toast.makeText(this, "Encrypted message sent", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this, "Failed to send encrypted message", Toast.LENGTH_SHORT).show()
                     }
-                } else {
-                    sendSms(contactNumber, message)
-                    etMessageInput.text.clear()
-                    val newMessage = SmsMessage(
-                        System.currentTimeMillis(),
-                        myNumber,
-                        message,
-                        System.currentTimeMillis(),
-                        true,
-                        true
-                    ) // Mark as sent
-                    smsAdapter.addMessage(newMessage)
-                    recyclerView.scrollToPosition(smsAdapter.itemCount - 1)
                 }
             }
         } else {
-            Toast.makeText(this, "Message cannot be empty", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Failed to encrypt message", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -152,24 +166,28 @@ class ChatActivity : AppCompatActivity() {
     }
 
     private fun receiveMessages() {
-        secureMessagingManager.receiveMessages(myNumber, contactNumber) { decryptedMessages ->
-            if (decryptedMessages.isEmpty()) {
-                // If there are no decrypted messages, fetch regular SMS messages
-                val messages = smsRepository.fetchMessagesForContact(contactNumber).toMutableList()
-                smsAdapter.updateMessages(messages)
-            } else {
-                // Update adapter with decrypted messages
-                val smsMessages = decryptedMessages.map { message ->
-                    SmsMessage(
-                        System.currentTimeMillis(),
-                        contactNumber,
-                        message,
-                        System.currentTimeMillis(),
-                        false,
-                        false
-                    )
-                }.toMutableList()
-                smsAdapter.updateMessages(smsMessages)
+        val localMessages = smsRepository.fetchMessagesForContact(contactNumber)
+
+        FirebaseDatabaseManager.getMessagesForUser(myNumber) { firebaseMessages ->
+            val decryptedFirebaseMessages = firebaseMessages.mapNotNull { message ->
+                if (message.senderUID == contactNumber && secretKey != null) {
+                    val decryptedContent = CryptoManager.decryptMessage(message.encryptedContent, secretKey!!)
+                    if (decryptedContent != null) {
+                        SmsMessage(
+                            message.timestamp,
+                            contactNumber,
+                            "[Encrypted] $decryptedContent",
+                            message.timestamp,
+                            false,
+                            false
+                        )
+                    } else null
+                } else null
+            }
+
+            val allMessages = (localMessages + decryptedFirebaseMessages).sortedBy { it.date }
+            runOnUiThread {
+                smsAdapter.updateMessages(allMessages.toMutableList())
             }
         }
     }
@@ -177,6 +195,11 @@ class ChatActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         receiveMessages()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        contentResolver.unregisterContentObserver(smsObserver)
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
