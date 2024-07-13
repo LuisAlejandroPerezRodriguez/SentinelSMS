@@ -209,10 +209,10 @@ class MainActivity : AppCompatActivity() {
                         val user = task.result?.user
                         showToast("Sign up successful")
                         currentUserUid = user?.uid ?: ""
-                        // Do not dismiss the authentication dialog after sign-up
+                        // Automatically sign in after successful registration
+                        signInWithEmailAndPassword(email, password)
                     } else {
                         showToast("Sign up failed: ${task.exception?.message}")
-                        // Do not dismiss the authentication dialog on sign-up failure
                     }
                 }
             }
