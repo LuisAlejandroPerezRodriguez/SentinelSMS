@@ -10,6 +10,7 @@ import android.os.Looper
 import android.provider.Telephony
 import android.telephony.SmsManager
 import android.telephony.TelephonyManager
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
@@ -81,9 +82,15 @@ class ChatActivity : AppCompatActivity() {
     }
 
     private fun initiateSecureConversation() {
-        FirebaseDatabaseManager.getUserPublicKey(contactNumber) { publicKeyBase64 ->
+        // Ensure contactNumber is in E.164 format
+        val formattedContactNumber = if (!contactNumber.startsWith("+")) "+1$contactNumber" else contactNumber
+        Log.d("ChatActivity", "Initiating secure conversation with: $formattedContactNumber")
+
+        FirebaseDatabaseManager.getUserPublicKey(formattedContactNumber) { publicKeyBase64 ->
+            Log.d("ChatActivity", "Received public key: ${publicKeyBase64 != null}")
             if (publicKeyBase64 != null) {
                 val generatedSecretKey = CryptoManager.performKeyExchange(publicKeyBase64)
+                Log.d("ChatActivity", "Generated secret key: ${generatedSecretKey != null}")
                 if (generatedSecretKey != null) {
                     secretKey = generatedSecretKey
                     isSecureConversation = true
@@ -93,6 +100,7 @@ class ChatActivity : AppCompatActivity() {
                 } else {
                     runOnUiThread {
                         Toast.makeText(this, "Failed to initiate secure conversation", Toast.LENGTH_SHORT).show()
+                        Log.e("ChatActivity", "Public key not found for contact: $formattedContactNumber")
                     }
                 }
             } else {

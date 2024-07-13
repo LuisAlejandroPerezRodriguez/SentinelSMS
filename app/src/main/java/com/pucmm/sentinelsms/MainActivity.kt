@@ -239,9 +239,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupUserCrypto(userId: String, phoneNumber: String) {
+        val formattedPhoneNumber = if (!phoneNumber.startsWith("+")) "+1$phoneNumber" else phoneNumber
         val publicKeyBase64 = CryptoManager.generateAndStoreKeyPair()
         if (publicKeyBase64 != null) {
-            FirebaseDatabaseManager.saveUserData(userId, phoneNumber, publicKeyBase64) { success ->
+            FirebaseDatabaseManager.saveUserData(userId, formattedPhoneNumber, publicKeyBase64) { success ->
                 if (success) {
                     Log.d("MainActivity", "Public key saved successfully for user: $userId")
                 } else {

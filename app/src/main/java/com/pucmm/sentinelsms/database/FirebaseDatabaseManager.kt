@@ -43,6 +43,9 @@ object FirebaseDatabaseManager {
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     val publicKey = snapshot.children.firstOrNull()?.child("publicKey")?.value as? String
+                    if (publicKey == null) {
+                        logger.log(Level.WARNING, "Public key not found for phone number: $phoneNumber")
+                    }
                     callback(publicKey)
                 }
 
