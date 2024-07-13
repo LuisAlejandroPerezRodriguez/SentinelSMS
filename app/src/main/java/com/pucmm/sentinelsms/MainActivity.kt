@@ -1,7 +1,6 @@
 package com.pucmm.sentinelsms
 
 import android.app.Dialog
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
@@ -24,22 +23,24 @@ import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.pucmm.sentinelsms.Adapter.ConversationAdapter
-import com.pucmm.sentinelsms.Adapter.SmsAdapter
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ktx.database
+import com.google.firebase.ktx.Firebase
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
-    private lateinit var smsAdapter: SmsAdapter
     private lateinit var smsRepository: SmsRepository
-
-    private val REQUEST_CODE_PERMISSIONS = 101
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var navigationView: NavigationView
     private lateinit var toolbar: Toolbar
-
     private lateinit var auth: FirebaseAuth
-    private lateinit var currentUserUid: String
+    private lateinit var database: FirebaseDatabase
     private var authDialog: Dialog? = null
+
+    companion object {
+        private const val REQUEST_CODE_PERMISSIONS = 101
+    }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,10 +52,32 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
+        database = Firebase.database
         toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
+        auth = FirebaseAuth.getInstance()
 
-        // Setup navigation drawer
+        setupNavigationDrawer()
+
+        if (!hasPermissions()) {
+            requestPermissions()
+        } else {
+            initialize()
+            setupAuth()
+        }
+
+        auth = FirebaseAuth.getInstance()
+
+        if (!hasPermissions()) {
+            requestPermissions()
+        } else {
+            initialize()
+            setupAuth()
+        }
+    }
+
+    private fun setupNavigationDrawer() {
         drawerLayout = findViewById(R.id.drawer_layout)
         navigationView = findViewById(R.id.nav_view)
 
@@ -73,14 +96,6 @@ class MainActivity : AppCompatActivity() {
             }
             drawerLayout.closeDrawers()
             true
-        }
-
-        // Check and request permissions
-        if (!hasPermissions()) {
-            requestPermissions()
-        } else {
-            initialize()
-            setupAuth()
         }
     }
 
@@ -124,9 +139,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupAuth() {
-        auth = FirebaseAuth.getInstance()
         val currentUser = auth.currentUser
-
         if (currentUser == null) {
             showAuthDialog()
         } else {
@@ -135,6 +148,7 @@ class MainActivity : AppCompatActivity() {
             initializeApp()
         }
     }
+
 
     private fun showAuthDialog() {
         // Dismiss the existing dialog if it's showing
@@ -149,6 +163,7 @@ class MainActivity : AppCompatActivity() {
         // Set up click listeners for the buttons
         val etEmail = dialog.findViewById<EditText>(R.id.etEmail)
         val etPassword = dialog.findViewById<EditText>(R.id.etPassword)
+        val etPhoneNumber = dialog.findViewById<EditText>(R.id.etPhoneNumber)
         val btnSignIn = dialog.findViewById<Button>(R.id.btnSignIn)
         val btnSignUp = dialog.findViewById<Button>(R.id.btnSignUp)
 
@@ -167,12 +182,13 @@ class MainActivity : AppCompatActivity() {
         btnSignUp.setOnClickListener {
             val email = etEmail.text.toString().trim()
             val password = etPassword.text.toString().trim()
+            val phoneNumber = etPhoneNumber.text.toString().trim()
 
-            if (email.isNotEmpty() && password.isNotEmpty()) {
-                createUserWithEmailAndPassword(email, password)
+            if (email.isNotEmpty() && password.isNotEmpty() && phoneNumber.isNotEmpty()) {
+                createUserWithEmailAndPassword(email, password, phoneNumber)
                 dialog.dismiss()
             } else {
-                showToast("Please enter email and password")
+                showToast("Please enter email, password, and phone number")
             }
         }
 
@@ -183,38 +199,55 @@ class MainActivity : AppCompatActivity() {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-                    val user = task.result?.user
                     runOnUiThread {
                         showToast("Sign in successful")
-                        currentUserUid = user?.uid ?: ""
                         initializeApp()
-                        // Dismiss the authentication dialog after successful sign-in
                         authDialog?.dismiss()
                         authDialog = null
                     }
                 } else {
                     runOnUiThread {
                         showToast("Sign in failed: ${task.exception?.message}")
-                        // Do not dismiss the authentication dialog on sign-in failure
                     }
                 }
             }
     }
 
-    private fun createUserWithEmailAndPassword(email: String, password: String) {
+    private fun createUserWithEmailAndPassword(email: String, password: String, phoneNumber: String) {
+        Log.d("Firebase", "Attempting to create user: $email")
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
-                runOnUiThread {
-                    if (task.isSuccessful) {
-                        val user = task.result?.user
-                        showToast("Sign up successful")
-                        currentUserUid = user?.uid ?: ""
-                        // Automatically sign in after successful registration
-                        signInWithEmailAndPassword(email, password)
-                    } else {
+                if (task.isSuccessful) {
+                    val user = task.result?.user
+                    Log.d("Firebase", "User created successfully: ${user?.uid}")
+                    user?.uid?.let { uid ->
+                        Log.d("Firebase", "Calling saveUserData for UID: $uid")
+                        saveUserData(uid, phoneNumber)
+                    }
+                    signInWithEmailAndPassword(email, password)
+                } else {
+                    Log.e("Firebase", "Sign up failed", task.exception)
+                    runOnUiThread {
                         showToast("Sign up failed: ${task.exception?.message}")
                     }
                 }
+            }
+    }
+
+
+    private fun saveUserData(uid: String, phoneNumber: String) {
+        Log.d("Firebase", "Attempting to save user data for UID: $uid")
+        val userRef = database.getReference("users").child(uid)
+        val userData = hashMapOf("phoneNumber" to phoneNumber)
+        userRef.setValue(userData)
+            .addOnSuccessListener {
+                Log.d("Firebase", "User data saved successfully for UID: $uid")
+            }
+            .addOnFailureListener { e ->
+                Log.e("Firebase", "Error saving user data for UID: $uid", e)
+            }
+            .addOnCompleteListener {
+                Log.d("Firebase", "Save operation completed for UID: $uid")
             }
     }
 
@@ -224,10 +257,18 @@ class MainActivity : AppCompatActivity() {
         // For example, you can show the RecyclerView and other UI elements
         recyclerView.visibility = View.VISIBLE
     }
+
     override fun onStart() {
         super.onStart()
-        val currentUser = auth.currentUser
-        updateUI(currentUser)
+        if (::auth.isInitialized) {
+            val currentUser = auth.currentUser
+            updateUI(currentUser)
+        } else {
+            Log.e("MainActivity", "Auth is not initialized")
+            // Handle the case where auth is not initialized
+            // You might want to call setupAuth() here or show an error message
+            setupAuth()
+        }
     }
 
     override fun onDestroy() {
