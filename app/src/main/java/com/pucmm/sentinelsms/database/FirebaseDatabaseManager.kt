@@ -76,15 +76,16 @@ object FirebaseDatabaseManager {
 
     fun getMessagesForUser(userUID: String, callback: (List<Message>) -> Unit) {
         database.child("messages")
-            .orderByChild("recipientUID")
-            .equalTo(userUID)
+            .orderByChild("timestamp")
             .limitToLast(100)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     val messages = mutableListOf<Message>()
                     snapshot.children.forEach { child ->
                         val message = child.getValue(Message::class.java)
-                        message?.let { messages.add(it) }
+                        if (message != null && (message.senderUID == userUID || message.recipientUID == userUID)) {
+                            messages.add(message)
+                        }
                     }
                     callback(messages)
                 }

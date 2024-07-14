@@ -40,7 +40,7 @@ class ChatActivity : AppCompatActivity() {
     private val smsObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
         override fun onChange(selfChange: Boolean) {
             super.onChange(selfChange)
-            receiveMessages() // This will now fetch both local and Firebase messages
+            receiveMessages() // This will fetch  local and Firebase messages
         }
     }
 
@@ -174,25 +174,27 @@ class ChatActivity : AppCompatActivity() {
     }
 
     private fun receiveMessages() {
+        Log.d("ChatActivity", "Receiving messages")
         val localMessages = smsRepository.fetchMessagesForContact(contactNumber)
+        Log.d("ChatActivity", "Local messages count: ${localMessages.size}")
 
         FirebaseDatabaseManager.getMessagesForUser(myNumber) { firebaseMessages ->
+            Log.d("ChatActivity", "Firebase messages count: ${firebaseMessages.size}")
             val decryptedFirebaseMessages = firebaseMessages.mapNotNull { message ->
-                if (message.senderUID == contactNumber && secretKey != null) {
+                if ((message.senderUID == contactNumber || message.senderUID == myNumber) && secretKey != null) {
                     val decryptedContent = CryptoManager.decryptMessage(message.encryptedContent, secretKey!!)
                     if (decryptedContent != null) {
                         SmsMessage(
                             message.timestamp,
-                            contactNumber,
+                            if (message.senderUID == myNumber) myNumber else contactNumber,
                             "[Encrypted] $decryptedContent",
                             message.timestamp,
-                            false,
-                            false
+                            true,
+                            message.senderUID == myNumber
                         )
                     } else null
                 } else null
             }
-
             val allMessages = (localMessages + decryptedFirebaseMessages).sortedBy { it.date }
             runOnUiThread {
                 smsAdapter.updateMessages(allMessages.toMutableList())
