@@ -96,6 +96,9 @@ object FirebaseDatabaseManager {
                 }
             })
     }
+    fun getMessagesReference(): DatabaseReference {
+        return database.child("messages")
+    }
 
     fun getUserIdByPhoneNumber(phoneNumber: String, callback: (String?) -> Unit) {
         database.child("users").orderByChild("phoneNumber").equalTo(phoneNumber)

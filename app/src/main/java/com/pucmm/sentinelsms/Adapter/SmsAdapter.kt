@@ -12,6 +12,7 @@ import com.pucmm.sentinelsms.SmsMessage
 import java.text.DateFormat
 import java.util.*
 import android.widget.LinearLayout
+import androidx.recyclerview.widget.DiffUtil
 
 
 class SmsAdapter(private var smsList: MutableList<SmsMessage>, private val myNumber: String) : RecyclerView.Adapter<SmsAdapter.SmsViewHolder>() {
@@ -55,9 +56,23 @@ class SmsAdapter(private var smsList: MutableList<SmsMessage>, private val myNum
         notifyItemInserted(smsList.size - 1) // Notify of insertion at the end
     }
 
-    fun updateMessages(newMessages: MutableList<SmsMessage>) {
-        smsList = newMessages
-        notifyDataSetChanged()
+    fun updateMessages(newMessages: List<SmsMessage>) {
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = smsList.size
+            override fun getNewListSize(): Int = newMessages.size
+
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                return smsList[oldItemPosition].id == newMessages[newItemPosition].id
+            }
+
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                return smsList[oldItemPosition] == newMessages[newItemPosition]
+            }
+        })
+
+        smsList.clear()
+        smsList.addAll(newMessages)
+        diffResult.dispatchUpdatesTo(this)
     }
 }
 

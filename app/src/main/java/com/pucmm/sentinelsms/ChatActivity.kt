@@ -19,8 +19,12 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ValueEventListener
 import com.pucmm.sentinelsms.Adapter.SmsAdapter
 import com.pucmm.sentinelsms.database.FirebaseDatabaseManager
+import com.pucmm.sentinelsms.database.Message
 import com.pucmm.sentinelsms.security.CryptoManager
 import javax.crypto.spec.SecretKeySpec
 
@@ -36,6 +40,7 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var myNumber: String
     private var secretKey: SecretKeySpec? = null
     private var isSecureConversation = false
+    private lateinit var messagesListener: ValueEventListener
 
     private val smsObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
         override fun onChange(selfChange: Boolean) {
@@ -62,6 +67,7 @@ class ChatActivity : AppCompatActivity() {
         smsAdapter = SmsAdapter(messages, myNumber)
         recyclerView.adapter = smsAdapter
         recyclerView.scrollToPosition(smsAdapter.itemCount - 1)
+        setupMessagesListener()
 
         btnSend.setOnClickListener {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)
@@ -79,6 +85,41 @@ class ChatActivity : AppCompatActivity() {
 
         contentResolver.registerContentObserver(Telephony.Sms.CONTENT_URI, true, smsObserver)
         initiateSecureConversation()
+    }
+
+    private fun setupMessagesListener() {
+        messagesListener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val messages = mutableListOf<SmsMessage>()
+                for (childSnapshot in snapshot.children) {
+                    val message = childSnapshot.getValue(Message::class.java)
+                    if (message != null && (message.senderUID == myNumber || message.recipientUID == myNumber)) {
+                        val decryptedContent = if (secretKey != null) {
+                            CryptoManager.decryptMessage(message.encryptedContent, secretKey!!) ?: message.encryptedContent
+                        } else {
+                            message.encryptedContent
+                        }
+                        messages.add(
+                            SmsMessage(
+                                message.timestamp,
+                                if (message.senderUID == myNumber) myNumber else contactNumber,
+                                decryptedContent,
+                                message.timestamp,
+                                true,
+                                message.senderUID == myNumber
+                            )
+                        )
+                    }
+                }
+                updateMessages(messages)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("ChatActivity", "Failed to read messages", error.toException())
+            }
+        }
+
+        FirebaseDatabaseManager.getMessagesReference().addValueEventListener(messagesListener)
     }
 
     private fun initiateSecureConversation() {
@@ -108,6 +149,14 @@ class ChatActivity : AppCompatActivity() {
                     Toast.makeText(this, "Contact not registered for secure messaging", Toast.LENGTH_SHORT).show()
                 }
             }
+        }
+    }
+
+    private fun updateMessages(newMessages: List<SmsMessage>) {
+        val allMessages = (smsRepository.fetchMessagesForContact(contactNumber) + newMessages).sortedBy { it.date }
+        runOnUiThread {
+            smsAdapter.updateMessages(allMessages)
+            recyclerView.scrollToPosition(smsAdapter.itemCount - 1)
         }
     }
 
@@ -209,7 +258,7 @@ class ChatActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        contentResolver.unregisterContentObserver(smsObserver)
+        FirebaseDatabaseManager.getMessagesReference().removeEventListener(messagesListener)
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
