@@ -190,15 +190,6 @@ class ChatActivity : AppCompatActivity() {
             FirebaseDatabaseManager.sendMessage(myNumber, contactNumber, encryptedMessage) { success ->
                 runOnUiThread {
                     if (success) {
-                        val newMessage = SmsMessage(
-                            System.currentTimeMillis(),
-                            myNumber,
-                            "[Encrypted] $message",
-                            System.currentTimeMillis(),
-                            true,
-                            true
-                        )
-                        smsAdapter.addMessage(newMessage)
                         recyclerView.scrollToPosition(smsAdapter.itemCount - 1)
                         Toast.makeText(this, "Encrypted message sent", Toast.LENGTH_SHORT).show()
                     } else {
