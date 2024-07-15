@@ -3,6 +3,7 @@ package com.pucmm.sentinelsms
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.provider.ContactsContract
+import android.widget.ImageButton
 import android.widget.SearchView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -20,25 +21,30 @@ class ContactListActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_contact_list)
 
+        setSupportActionBar(findViewById(R.id.toolbar))
+        supportActionBar?.setDisplayHomeAsUpEnabled(false)
+        supportActionBar?.setDisplayShowHomeEnabled(false)
+
+        findViewById<ImageButton>(R.id.backButton).setOnClickListener {
+            onBackPressed()
+        }
+
         searchView = findViewById(R.id.searchView)
         recyclerView = findViewById(R.id.recyclerView)
 
-        // Set up RecyclerView
         recyclerView.layoutManager = LinearLayoutManager(this)
-        contactAdapter = ContactAdapter(emptyList()) // Initialize with an empty list
+        contactAdapter = ContactAdapter(emptyList())
         recyclerView.adapter = contactAdapter
 
-        // Load contacts
         loadContacts()
 
-        // Set up SearchView
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 return false
             }
 
-            override fun onQueryTextChange(newText:String?): Boolean {
-                contactAdapter.filter.filter(newText) // Call the filter method of the Filter object
+            override fun onQueryTextChange(newText: String?): Boolean {
+                contactAdapter.filter.filter(newText)
                 return true
             }
         })
