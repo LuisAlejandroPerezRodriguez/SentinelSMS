@@ -1,6 +1,7 @@
 package com.pucmm.sentinelsms
 
 import android.app.Dialog
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
@@ -53,6 +54,12 @@ class MainActivity : AppCompatActivity() {
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
+        }
+
+        val sendSmsButton: Button = findViewById(R.id.send_sms)
+        sendSmsButton.setOnClickListener {
+            val intent = Intent(this, ContactListActivity::class.java)
+            startActivity(intent)
         }
 
         database = Firebase.database
