@@ -10,8 +10,10 @@ import android.widget.Filter
 import com.pucmm.sentinelsms.Contact
 import com.pucmm.sentinelsms.R
 
-class ContactAdapter(private var contacts: List<Contact>) :
-    RecyclerView.Adapter<RecyclerView.ViewHolder>(), Filterable {
+class ContactAdapter(
+    private var contacts: List<Contact>,
+    private val onContactClick: (Contact) -> Unit
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), Filterable {
 
     private var filteredContacts = groupContacts(contacts)
 
@@ -67,6 +69,10 @@ class ContactAdapter(private var contacts: List<Contact>) :
                 holder.nameTextView.text = contact.name
                 holder.phoneTextView.text = contact.phoneNumber
                 holder.initialTextView.text = contact.name.first().toString()
+
+                holder.itemView.setOnClickListener {
+                    onContactClick(contact)
+                }
             }
         }
     }
@@ -106,10 +112,3 @@ class ContactAdapter(private var contacts: List<Contact>) :
         private const val VIEW_TYPE_CONTACT = 1
     }
 }
-
-
-
-
-
-
-

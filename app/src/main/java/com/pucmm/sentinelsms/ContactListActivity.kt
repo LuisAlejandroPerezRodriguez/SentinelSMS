@@ -1,5 +1,6 @@
 package com.pucmm.sentinelsms
 
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.provider.ContactsContract
@@ -33,7 +34,11 @@ class ContactListActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.recyclerView)
 
         recyclerView.layoutManager = LinearLayoutManager(this)
-        contactAdapter = ContactAdapter(emptyList())
+        contactAdapter = ContactAdapter(emptyList()) { contact ->
+            val intent = Intent(this, ChatActivity::class.java)
+            intent.putExtra("contactNumber", contact.phoneNumber)
+            startActivity(intent)
+        }
         recyclerView.adapter = contactAdapter
 
         loadContacts()
