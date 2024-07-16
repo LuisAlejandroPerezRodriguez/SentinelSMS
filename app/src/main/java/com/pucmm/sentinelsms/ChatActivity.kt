@@ -10,6 +10,8 @@ import android.os.Looper
 import android.provider.Telephony
 import android.telephony.SmsManager
 import android.telephony.TelephonyManager
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
@@ -27,13 +29,14 @@ import com.pucmm.sentinelsms.Adapter.SmsAdapter
 import com.pucmm.sentinelsms.database.FirebaseDatabaseManager
 import com.pucmm.sentinelsms.database.Message
 import com.pucmm.sentinelsms.security.CryptoManager
+import com.pucmm.sentinelsms.views.AutoResizeEditText
 import javax.crypto.spec.SecretKeySpec
 
 class ChatActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var smsAdapter: SmsAdapter
     private lateinit var smsRepository: SmsRepository
-    private lateinit var etMessageInput: EditText
+    private lateinit var etMessageInput: AutoResizeEditText
     private lateinit var btnSend: ImageButton
     private lateinit var contactNumber: String
     private val smsPermissionRequestCode = 100
@@ -56,6 +59,7 @@ class ChatActivity : AppCompatActivity() {
 
         telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
         myNumber = telephonyManager.line1Number ?: ""
+        etMessageInput = findViewById(R.id.etMessageInput)
 
         recyclerView = findViewById(R.id.rvChatMessages)
         etMessageInput = findViewById(R.id.etMessageInput)
@@ -85,6 +89,16 @@ class ChatActivity : AppCompatActivity() {
                 sendSmsMessage()
             }
         }
+        // Add this listener to scroll the RecyclerView when the input field expands
+        etMessageInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                recyclerView.post {
+                    recyclerView.scrollToPosition(smsAdapter.itemCount - 1)
+                }
+            }
+        })
 
         contentResolver.registerContentObserver(Telephony.Sms.CONTENT_URI, true, smsObserver)
         initiateSecureConversation()
@@ -171,7 +185,7 @@ class ChatActivity : AppCompatActivity() {
             } else {
                 sendSms(contactNumber, message)
             }
-            etMessageInput.text.clear()
+            etMessageInput.text?.clear()
             val newMessage = SmsMessage(
                 System.currentTimeMillis(),
                 myNumber,
