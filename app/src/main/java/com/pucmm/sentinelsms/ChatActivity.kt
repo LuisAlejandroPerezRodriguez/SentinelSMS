@@ -13,6 +13,7 @@ import android.telephony.TelephonyManager
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -33,7 +34,7 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var smsAdapter: SmsAdapter
     private lateinit var smsRepository: SmsRepository
     private lateinit var etMessageInput: EditText
-    private lateinit var btnSend: Button
+    private lateinit var btnSend: ImageButton
     private lateinit var contactNumber: String
     private val smsPermissionRequestCode = 100
     private lateinit var telephonyManager: TelephonyManager
@@ -68,6 +69,8 @@ class ChatActivity : AppCompatActivity() {
         recyclerView.adapter = smsAdapter
         recyclerView.scrollToPosition(smsAdapter.itemCount - 1)
         setupMessagesListener()
+
+        btnSend = findViewById(R.id.btnSend)
 
         btnSend.setOnClickListener {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)

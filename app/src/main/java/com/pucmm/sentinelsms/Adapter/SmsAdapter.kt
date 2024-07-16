@@ -18,8 +18,6 @@ import androidx.recyclerview.widget.DiffUtil
 class SmsAdapter(private var smsList: MutableList<SmsMessage>, private val myNumber: String) : RecyclerView.Adapter<SmsAdapter.SmsViewHolder>() {
 
     class SmsViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val ivContactIcon: ImageView = itemView.findViewById(R.id.ivContactIcon)
-        val tvSender: TextView = itemView.findViewById(R.id.tvSender)
         val tvBody: TextView = itemView.findViewById(R.id.tvBody)
         val tvDate: TextView = itemView.findViewById(R.id.tvDate)
         val messageContainer: LinearLayout = itemView.findViewById(R.id.messageContainer)
@@ -31,22 +29,22 @@ class SmsAdapter(private var smsList: MutableList<SmsMessage>, private val myNum
     }
 
     override fun onBindViewHolder(holder: SmsViewHolder, position: Int) {
-        val sms = smsList[position] // Access messages in normal order
-
-        if (sms.isSent) {
-            holder.tvSender.text = "Me"
-            holder.tvBody.setBackgroundResource(R.drawable.message_background_sent)
-            holder.messageContainer.gravity = Gravity.END
-        } else {
-            holder.tvSender.text = sms.address
-            holder.tvBody.setBackgroundResource(R.drawable.message_background_received)
-            holder.messageContainer.gravity = Gravity.START
-        }
+        val sms = smsList[position]
 
         holder.tvBody.text = sms.body
         holder.tvDate.text = DateFormat.getDateTimeInstance().format(Date(sms.date))
-        holder.ivContactIcon.setImageResource(R.drawable.ic_contact_default)
+
+        val params = holder.messageContainer.layoutParams as LinearLayout.LayoutParams
+        if (sms.isSent) {
+            params.gravity = Gravity.END
+            holder.messageContainer.setBackgroundResource(R.drawable.message_background_sent)
+        } else {
+            params.gravity = Gravity.START
+            holder.messageContainer.setBackgroundResource(R.drawable.message_background_received)
+        }
+        holder.messageContainer.layoutParams = params
     }
+
 
 
     override fun getItemCount() = smsList.size
