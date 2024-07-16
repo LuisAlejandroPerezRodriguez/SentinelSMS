@@ -1,18 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+
     <uses-feature
         android:name="android.hardware.telephony"
         android:required="false" />
-    <uses-permission android:name="android.permission.SEND_SMS" />
-    <uses-permission android:name="android.permission.READ_SMS" />
-    <uses-permission android:name="android.permission.READ_CONTACTS"/>
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />
-    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+
+    <uses-permission android:name="android.permission.SEND_SMS"
+        android:permissionGroup="android.permission-group.SMS"
+        android:description="@string/permission_send_sms_description"/>
+    <uses-permission android:name="android.permission.READ_SMS"
+        android:permissionGroup="android.permission-group.SMS"
+        android:description="@string/permission_read_sms_description"/>
+    <uses-permission android:name="android.permission.READ_CONTACTS"
+        android:permissionGroup="android.permission-group.CONTACTS"
+        android:description="@string/permission_read_contacts_description"/>
+    <uses-permission android:name="android.permission.READ_PHONE_NUMBERS"
+        android:permissionGroup="android.permission-group.PHONE"
+        android:description="@string/permission_read_phone_numbers_description"/>
+    <uses-permission android:name="android.permission.RECEIVE_SMS"
+        android:permissionGroup="android.permission-group.SMS"
+        android:description="@string/permission_receive_sms_description"/>
     <uses-permission android:name="android.permission.INTERNET" />
-
-
 
     <application
         android:allowBackup="true"
@@ -23,18 +32,18 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.SentinelSMS"
+        android:usesCleartextTraffic="false"
         tools:targetApi="31">
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity android:name=".ContactListActivity" />
         <activity android:name=".ChatActivity" />
     </application>
-
 </manifest>

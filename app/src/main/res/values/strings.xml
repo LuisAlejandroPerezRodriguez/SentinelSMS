@@ -6,5 +6,10 @@
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
 
+    <string name="permission_send_sms_description">Needed to send secure messages</string>
+    <string name="permission_read_sms_description">Needed to display your messages</string>
+    <string name="permission_read_contacts_description">Needed to display your contacts</string>
+    <string name="permission_read_phone_numbers_description">Needed to verify your phone number</string>
+    <string name="permission_receive_sms_description">Needed to receive secure messages</string>
 
 </resources>
