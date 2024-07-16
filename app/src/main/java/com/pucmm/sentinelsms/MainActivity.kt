@@ -182,7 +182,6 @@ class MainActivity : AppCompatActivity() {
 
             if (email.isNotEmpty() && password.isNotEmpty()) {
                 signInWithEmailAndPassword(email, password)
-                dialog.dismiss()
             } else {
                 showToast("Please enter email and password")
             }
@@ -195,7 +194,6 @@ class MainActivity : AppCompatActivity() {
 
             if (email.isNotEmpty() && password.isNotEmpty() && phoneNumber.isNotEmpty()) {
                 createUserWithEmailAndPassword(email, password, phoneNumber)
-                dialog.dismiss()
             } else {
                 showToast("Please enter email, password, and phone number")
             }
@@ -244,6 +242,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
     }
+
 
     private fun setupUserCrypto(userId: String, phoneNumber: String) {
         val formattedPhoneNumber = if (!phoneNumber.startsWith("+")) "+1$phoneNumber" else phoneNumber
