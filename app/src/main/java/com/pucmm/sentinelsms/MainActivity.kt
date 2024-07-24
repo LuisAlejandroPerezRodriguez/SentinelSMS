@@ -21,6 +21,7 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.navigation.NavigationView
+import com.pucmm.sentinelsms.textclassificationstep2.tensor
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.pucmm.sentinelsms.Adapter.ConversationAdapter
@@ -99,13 +100,17 @@ class MainActivity : AppCompatActivity() {
 
         navigationView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
-                R.id.nav_option1 -> showToast("Option 1")
+                R.id.nav_option1 -> {
+                    val intent = Intent(this, tensor::class.java)
+                    startActivity(intent)
+                }
                 R.id.nav_option2 -> showToast("Option 2")
                 R.id.nav_option3 -> showToast("Option 3")
             }
             drawerLayout.closeDrawers()
             true
         }
+
     }
 
     private fun hasPermissions(): Boolean {
