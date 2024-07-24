@@ -89,7 +89,7 @@ class ChatActivity : AppCompatActivity() {
                 sendSmsMessage()
             }
         }
-        // Add this listener to scroll the RecyclerView when the input field expands
+        // listener to scroll the RecyclerView when the input field expands
         etMessageInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -140,7 +140,7 @@ class ChatActivity : AppCompatActivity() {
     }
 
     private fun initiateSecureConversation() {
-        // Ensure contactNumber is in E.164 format
+        // Ensures contactNumber is in E.164 format
         val formattedContactNumber = if (!contactNumber.startsWith("+")) "+1$contactNumber" else contactNumber
         Log.d("ChatActivity", "Initiating secure conversation with: $formattedContactNumber")
 

@@ -121,7 +121,7 @@ class ContactListActivity : AppCompatActivity() {
                 if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
                     loadContacts()
                 } else {
-                    // Permission denied, handle accordingly (e.g., show a message to the user)
+                    //TODO correctly handle permission denial.
                 }
                 return
             }

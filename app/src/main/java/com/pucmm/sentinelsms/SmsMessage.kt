@@ -7,5 +7,5 @@ data class SmsMessage (
     val body: String,
     val date: Long,
     val read: Boolean,
-    val isSent: Boolean // Add this flag
+    val isSent: Boolean
 )

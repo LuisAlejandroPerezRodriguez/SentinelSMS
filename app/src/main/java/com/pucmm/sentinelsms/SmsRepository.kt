@@ -60,7 +60,7 @@ class SmsRepository(private val context: Context) {
 
         return conversations.map { (address, messages) ->
             val contactName = getContactName(address) ?: address
-            Conversation(contactName, messages.reversed()) // Reverse the message list
+            Conversation(contactName, messages.reversed())
         }
     }
 
@@ -88,7 +88,7 @@ class SmsRepository(private val context: Context) {
             Telephony.Sms.BODY,
             Telephony.Sms.DATE,
             Telephony.Sms.READ,
-            Telephony.Sms.TYPE // Add this to differentiate between sent and received messages
+            Telephony.Sms.TYPE
         )
         val selection = "${Telephony.Sms.ADDRESS} = ?"
         val selectionArgs = arrayOf(contactNumber)
@@ -100,7 +100,7 @@ class SmsRepository(private val context: Context) {
             val bodyIndex = it.getColumnIndex(Telephony.Sms.BODY)
             val dateIndex = it.getColumnIndex(Telephony.Sms.DATE)
             val readIndex = it.getColumnIndex(Telephony.Sms.READ)
-            val typeIndex = it.getColumnIndex(Telephony.Sms.TYPE) // Get the message type
+            val typeIndex = it.getColumnIndex(Telephony.Sms.TYPE)
 
             while (it.moveToNext()) {
                 val id = it.getLong(idIndex)
@@ -108,10 +108,10 @@ class SmsRepository(private val context: Context) {
                 val body = it.getString(bodyIndex)
                 val date = it.getLong(dateIndex)
                 val read = it.getInt(readIndex) == 1
-                val type = it.getInt(typeIndex) // Get the message type
+                val type = it.getInt(typeIndex)
 
                 val contactName = getContactName(address) ?: address
-                messages.add(SmsMessage(id, contactName, body, date, read, type == Telephony.Sms.MESSAGE_TYPE_SENT)) // Add isSent flag
+                messages.add(SmsMessage(id, contactName, body, date, read, type == Telephony.Sms.MESSAGE_TYPE_SENT))
             }
         }
     }

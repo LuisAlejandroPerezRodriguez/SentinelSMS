@@ -46,12 +46,11 @@ class SmsAdapter(private var smsList: MutableList<SmsMessage>, private val myNum
     }
 
 
-
     override fun getItemCount() = smsList.size
 
     fun addMessage(message: SmsMessage) {
-        smsList.add(message) // Add to the end of the list
-        notifyItemInserted(smsList.size - 1) // Notify of insertion at the end
+        smsList.add(message)
+        notifyItemInserted(smsList.size - 1)
     }
 
     fun updateMessages(newMessages: List<SmsMessage>) {

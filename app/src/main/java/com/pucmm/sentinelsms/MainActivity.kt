@@ -127,7 +127,7 @@ class MainActivity : AppCompatActivity() {
                 initialize()
                 setupAuth()
             } else {
-                // Permissions not granted. Handle appropriately.
+                // TODO Handle permissions not granted.
             }
         }
     }
@@ -153,7 +153,6 @@ class MainActivity : AppCompatActivity() {
             showAuthDialog()
         } else {
             // User is already signed in
-            // Proceed with your app logic
             initializeApp()
         }
     }
@@ -270,8 +269,6 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun initializeApp() {
-        // Initialize your app logic and UI here
-        // For example, you can show the RecyclerView and other UI elements
         recyclerView.visibility = View.VISIBLE
     }
 
@@ -295,7 +292,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateUI(currentUser: FirebaseUser?) {
         // Update the UI based on the user's authentication state
-        // For example, you can show/hide certain UI elements or navigate to different screens
         if (currentUser == null) {
             // User is not signed in, show the authentication dialog
             showAuthDialog()

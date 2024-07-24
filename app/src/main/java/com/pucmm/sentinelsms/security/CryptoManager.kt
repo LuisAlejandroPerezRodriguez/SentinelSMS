@@ -18,15 +18,6 @@ object CryptoManager {
         }
     }
 
-    fun getStoredPublicKeyBase64(): String? {
-        val publicKey = KeystoreManager.getPublicKey()
-        return if (publicKey != null) {
-            DHKeyExchange.publicKeyToBase64(publicKey)
-        } else {
-            Log.e(TAG, "Failed to retrieve stored public key")
-            null
-        }
-    }
 
     fun performKeyExchange(otherPublicKeyBase64: String): SecretKeySpec? {
         val otherPublicKey = DHKeyExchange.base64ToPublicKey(otherPublicKeyBase64)

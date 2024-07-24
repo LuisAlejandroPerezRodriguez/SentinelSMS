@@ -21,7 +21,7 @@ object AESUtils {
         val iv = cipher.iv
         val encryptedData = cipher.doFinal(data)
 
-        // Combine IV and encrypted data
+
         val combined = ByteArray(iv.size + encryptedData.size)
         System.arraycopy(iv, 0, combined, 0, iv.size)
         System.arraycopy(encryptedData, 0, combined, iv.size, encryptedData.size)
@@ -32,7 +32,7 @@ object AESUtils {
     fun decrypt(secretKey: SecretKeySpec, encryptedData: String): ByteArray {
         val combined = Base64.decode(encryptedData, Base64.DEFAULT)
 
-        // Extract IV
+
         val iv = combined.copyOfRange(0, GCM_IV_LENGTH)
         val ciphertext = combined.copyOfRange(GCM_IV_LENGTH, combined.size)
 

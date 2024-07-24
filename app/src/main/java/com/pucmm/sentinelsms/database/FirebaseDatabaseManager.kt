@@ -100,18 +100,4 @@ object FirebaseDatabaseManager {
         return database.child("messages")
     }
 
-    fun getUserIdByPhoneNumber(phoneNumber: String, callback: (String?) -> Unit) {
-        database.child("users").orderByChild("phoneNumber").equalTo(phoneNumber)
-            .addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val userId = snapshot.children.firstOrNull()?.key
-                    callback(userId)
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    logger.log(Level.SEVERE, "Failed to retrieve user ID", error.toException())
-                    callback(null)
-                }
-            })
-    }
 }
